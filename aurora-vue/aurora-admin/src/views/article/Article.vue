@@ -283,10 +283,12 @@ export default {
       this.autoSave = false
     },
     saveOrUpdateArticle() {
+      console.log(this.article)
       if (this.article.articleTitle.trim() == '') {
         this.$message.error('文章标题不能为空')
         return false
       }
+      debugger
       if (this.article.articleContent.trim() == '') {
         this.$message.error('文章内容不能为空')
         return false
@@ -303,6 +305,8 @@ export default {
         this.$message.error('文章封面不能为空')
         return false
       }
+      debugger
+      console.log(this.article)
       this.axios.post('/api/admin/articles', this.article).then(({ data }) => {
         if (data.flag) {
           if (this.article.id === null) {

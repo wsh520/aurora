@@ -1,7 +1,6 @@
 package com.aurora.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.aurora.model.dto.*;
 import com.aurora.entity.Article;
 import com.aurora.entity.ArticleTag;
 import com.aurora.entity.Category;
@@ -13,6 +12,8 @@ import com.aurora.mapper.ArticleMapper;
 import com.aurora.mapper.ArticleTagMapper;
 import com.aurora.mapper.CategoryMapper;
 import com.aurora.mapper.TagMapper;
+import com.aurora.model.dto.*;
+import com.aurora.model.vo.*;
 import com.aurora.service.ArticleService;
 import com.aurora.service.ArticleTagService;
 import com.aurora.service.RedisService;
@@ -22,7 +23,6 @@ import com.aurora.strategy.context.UploadStrategyContext;
 import com.aurora.util.BeanCopyUtil;
 import com.aurora.util.PageUtil;
 import com.aurora.util.UserUtil;
-import com.aurora.model.vo.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -41,8 +41,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.aurora.constant.RabbitMQConstant.SUBSCRIBE_EXCHANGE;
-import static com.aurora.constant.RedisConstant.*;
-import static com.aurora.enums.ArticleStatusEnum.*;
+import static com.aurora.constant.RedisConstant.ARTICLE_ACCESS;
+import static com.aurora.constant.RedisConstant.ARTICLE_VIEWS_COUNT;
+import static com.aurora.enums.ArticleStatusEnum.DRAFT;
 import static com.aurora.enums.StatusCodeEnum.ARTICLE_ACCESS_FAIL;
 
 @Service
@@ -276,9 +277,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteArticles(List<Integer> articleIds) {
+        List<Article> articles = articleMapper.selectBatchIds(articleIds);
+        List<String> paths = articles.stream()
+                .map(article -> {
+                    String cover = article.getArticleCover();
+                    if (cover != null && cover.contains("com/")) {
+                        return cover.split("com/")[1]; // 截取 com 后面的部分
+                    }
+                    return null; // 或者处理无效情况
+                })
+                .filter(path -> path != null && !path.isEmpty()) // 过滤掉 null 和空字符串
+                .collect(Collectors.toList());
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>()
                 .in(ArticleTag::getArticleId, articleIds));
         articleMapper.deleteBatchIds(articleIds);
+        uploadStrategyContext.executeDeleteStrategy(paths);
     }
 
     @Override

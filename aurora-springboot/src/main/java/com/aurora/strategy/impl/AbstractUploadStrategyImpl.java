@@ -6,7 +6,9 @@ import com.aurora.util.FileUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 @Service
 public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
@@ -18,8 +20,9 @@ public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
             String extName = FileUtil.getExtName(file.getOriginalFilename());
             String fileName = md5 + extName;
             if (!exists(path + fileName)) {
-                upload(path, fileName, file.getInputStream());
+                createFilePath(path);
             }
+            upload(path, fileName, file.getInputStream());
             return getFileAccessUrl(path + fileName);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,5 +46,9 @@ public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
     public abstract void upload(String path, String fileName, InputStream inputStream) throws IOException;
 
     public abstract String getFileAccessUrl(String filePath);
+
+    public abstract Boolean createFilePath(String path);
+
+    public abstract void deleteFiles(List<String> filePathList);
 
 }

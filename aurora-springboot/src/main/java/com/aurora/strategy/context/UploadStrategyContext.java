@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 import static com.aurora.enums.UploadModeEnum.getStrategy;
@@ -28,4 +29,7 @@ public class UploadStrategyContext {
         return uploadStrategyMap.get(getStrategy(uploadMode)).uploadFile(fileName, inputStream, path);
     }
 
+    public void executeDeleteStrategy(List<String> filePathList) {
+         uploadStrategyMap.get(getStrategy(uploadMode)).deleteFiles(filePathList);
+    }
 }
